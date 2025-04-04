@@ -4,15 +4,12 @@ import type { NuxtError } from "#app";
 interface User {
   id: number;
   email: string;
-  username?: string;
   accessToken: string;
-  refreshToken?: string;
 }
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
   error: string | null;
 }
 
@@ -22,14 +19,12 @@ interface LoginCredentials {
 }
 
 interface RegisterData extends LoginCredentials {
-  username?: string;
 }
 
 export const useAuthStore = defineStore("auth", {
   state: (): AuthState => ({
     user: null,
     isAuthenticated: false,
-    isLoading: false,
     error: null,
   }),
 
@@ -39,44 +34,44 @@ export const useAuthStore = defineStore("auth", {
       this.isAuthenticated = !!authCookie.value;
     },
 
-    async registerUser(registerData: RegisterData) {
-      this.isLoading = true;
+    async register(registerData: RegisterData) {
       this.error = null;
       try {
         const response = await fetch("http://localhost:3002/auth/register", {
           method: "POST",
-          body: registerData,
+          body: JSON.stringify(registerData),
+          headers: {
+            "Content-type": "application/json"
+          }
         });
-
-        this.user = response;
+        const user = await response.json()
+        this.user = user;
         this.isAuthenticated = true;
-        this.setAuthCookies(response);
-        return response;
+        this.setAuthCookies(user);
+        return user;
       } catch (error) {
         throw error;
-      } finally {
-        this.isLoading = false;
-      }
+      } 
     },
 
     async login(credentials: LoginCredentials) {
-      this.isLoading = true;
       this.error = null;
       try {
         const response = await fetch("http://localhost:3002/auth/login", {
           method: "POST",
           body: JSON.stringify(credentials),
+          headers: {
+            "Content-type": "application/json"
+          }
         });
-
-        this.user = response.data as User;
+        const user = await response.json()
+        this.user = user;
         this.isAuthenticated = true;
-        this.setAuthCookies(response);
-        return response;
+        this.setAuthCookies(user);
+        return user;
       } catch (error) {
         throw error;
-      } finally {
-        this.isLoading = false;
-      }
+      } 
     },
 
     async logout() {
@@ -98,12 +93,6 @@ export const useAuthStore = defineStore("auth", {
       authCookie.value = null;
     },
 
-    getAuthHeaders() {
-      return {
-        Authorization: `Bearer ${this.user?.accessToken || ""}`,
-      };
-    },
-
     resetAuthState() {
       this.user = null;
       this.isAuthenticated = false;
@@ -118,6 +107,5 @@ export const useAuthStore = defineStore("auth", {
   getters: {
     currentUser: (state) => state.user,
     authError: (state) => state.error,
-    isAuthLoading: (state) => state.isLoading,
   },
 });
