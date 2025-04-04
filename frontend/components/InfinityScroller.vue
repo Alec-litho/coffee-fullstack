@@ -8,7 +8,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from "vue";
-
 const props = defineProps({
   loadMore: {
     type: Function,
@@ -23,7 +22,6 @@ const scrollContainer = ref<HTMLElement | null>(null);
 
 
 const handleScroll = throttle(() => {
-  console.log(productsStore.page,productsStore.totalPages, "--------------------" )
 
   if(productsStore.page >= productsStore.totalPages) return
   const container = scrollContainer.value;

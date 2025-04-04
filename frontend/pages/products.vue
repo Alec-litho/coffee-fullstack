@@ -25,13 +25,13 @@ const handleLogout = () => {
   navigateTo("/login");
 };
 
-const handleOpenModal = () => showModal.value = true
+const handleOpenModal = () => (showModal.value = true);
 
-//we check if user selected project if so, then we update otherwise we create
+//we check if user selected project if so we update, otherwise we create
 const handleSave = (data: Product) => {
   if (selectedProduct.value.name) {
-    const id = data.id
-    delete data.id
+    const id = data.id;
+    delete data.id;
     productsStore.updateProduct(id, data);
   } else {
     delete data.id;
@@ -43,13 +43,12 @@ const handleCloseModal = () => {
   showModal.value = !showModal.value;
   selectedProduct.value = emptyProductObj;
 };
-const handleClick = function(e) {
-  if(e.target.parentNode.className === "table-row") {
-    selectedProduct.value = productsStore.getProduct(e.target.parentNode.getAttribute("id"))
-    handleOpenModal()
+const handleClick = function (e) {
+  if (e.target.parentNode.className === "table-row") {
+    selectedProduct.value = productsStore.getProduct(e.target.parentNode.getAttribute("id"));
+    handleOpenModal();
   }
 };
-
 </script>
 
 <template>
@@ -122,7 +121,7 @@ const handleClick = function(e) {
         display: flex;
         align-items: center;
         justify-content: flex-start;
-        transition: .2s;
+        transition: 0.2s;
         cursor: pointer;
         p {
           width: 20%;
