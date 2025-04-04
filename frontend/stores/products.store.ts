@@ -1,81 +1,104 @@
 import { defineStore } from "pinia";
-
-interface Product {
-  id: number;
-  name: string;
-  status: string;
-  date_created: string;
-  price: number;
-  category: string;
-  stock: number;
-  brand: string;
-  rating: number;
-}
+import type { Product } from "~/types";
 
 interface DataState {
-  products: Product[]
-
+  products: Product[];
+  isLoading: boolean;
+  page: number;
+  totalPages: number
+  pageSize: number;
 }
 
 export const useProductsStore = defineStore("products", {
   state: (): DataState => ({
-    products: []
+    products: [],
+    isLoading: false,
+    page: 0,
+    totalPages: 1,
+    pageSize: 10,
   }),
   getters: {
-    getAllProducts(state) {
+    getAllProducts: (state): Product[] => {
       return state.products;
     },
-    getAllBrands(state) {
-      return new Set(state.products.map((product) => product.brand));
+    getAuthToken: (state) => {
+      const token = useCookie("authToken") || "";
+      return token.value;
+    },
+    getStatus: (state) => {
+      return state.isLoading;
+    },
+    getProduct: (state) => {
+      return (id:number) => state.products.filter(product => product.id == id)[0];
     },
   },
   actions: {
     async fetchProducts() {
       try {
-        const data  = await fetch("/api/products");
-        this.$state.products = data as Product[];
-      } catch (error) {
-      } 
+        this.isLoading = true;
+        const response = await fetch(`http://localhost:3002/products?page=${this.page+1}&pageSize=${this.pageSize}`, {
+          headers: { Authorization: `Bearer ${this.getAuthToken}`, "Content-Type": "application/json" },
+        });
+        const {data, pagination} = await response.json();
+        this.isLoading = false;
+        this.products = [...this.products,...data];
+        console.log(this.page, pagination)
+        this.page += 1
+        this.totalPages = pagination.totalPages
+        return data
+      } catch (error) {}
     },
     async createProduct(productData: Omit<Product, "id">) {
       try {
-        const newProduct = await fetch("/api/products", {
+        this.isLoading = true;
+        const response = await fetch("http://localhost:3002/products", {
           method: "POST",
           body: JSON.stringify(productData),
+          headers: { Authorization: `Bearer ${this.getAuthToken}`, "Content-Type": "application/json" },
         });
-        this.$state.products = [newProduct, ...this.$state.products]
+        const newProduct = await response.json();
+        this.isLoading = false;
+        this.products = [newProduct, ...this.products];
         return newProduct;
       } catch (error) {
         throw error;
       }
     },
 
-    async updateProduct(id: number, productData: Partial<Product>) {
+    async updateProduct(id:number, productData: Partial<Product>) {
       try {
-        const updatedProduct = await $fetch<Product>(`/api/products/${id}`, {
-          method: "PUT",
-          body: productData,
-        });
+        this.isLoading = true;
 
-        this.$state.products = this.$state.products.map((item) => (item.id === id ? { ...item, ...updatedProduct } : item));
+        const response = await fetch(`http://localhost:3002/products/${id}`, {
+          method: "PUT",
+          body: JSON.stringify(productData),
+          headers: { Authorization: `Bearer ${this.getAuthToken}`, "Content-Type": "application/json" },
+        });
+        const updatedProduct = await response.json();
+        this.isLoading = false;
+
+        this.products = this.products.map((item) => (item.id === updatedProduct.id ? { ...item, ...updatedProduct } : item));
 
         return updatedProduct;
       } catch (error) {
         throw error;
-      } 
+      }
     },
 
     async deleteProduct(id: number) {
+      this.isLoading = true;
+
       try {
-        await fetch(`/api/products/${id}`, {
+        await fetch(`http://localhost:3002/products/${id}`, {
           method: "DELETE",
+          headers: { Authorization: `Bearer ${this.getAuthToken}`, "Content-Type": "application/json" },
         });
+        this.isLoading = false;
 
-        this.$state.products =  this.$state.products.filter((item) => item.id !== id);
-
+        this.products = this.products.filter((item) => item.id !== id);
       } catch (error) {
         throw error;
-      } 
+      }
     },
   },
 });

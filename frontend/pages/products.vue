@@ -5,34 +5,49 @@ import type { Product } from "~/types";
 
 const authStore = useAuthStore();
 const productsStore = useProductsStore();
-const selectedProduct =  {
-    id: 0,
-    name: "",
-    price: 0,
-    category: "",
-    description: "",
-    stock: 0,
-  };
+const emptyProductObj = {
+  id: 0,
+  name: "",
+  price: 0,
+  category: "",
+  description: "",
+  stock: 0,
+};
+let selectedProduct = ref({ ...emptyProductObj });
 let showModal = ref(false);
 
-// onMounted(() => {
-//   if (!authStore.isAuthenticated) {
-//     return navigateTo("/login");
-//   }
-// });
 onMounted(() => {
-  productsStore.fetchProducts()
+  productsStore.fetchProducts();
 });
-
 
 const handleLogout = () => {
   authStore.logout();
   navigateTo("/login");
 };
 
-const handleModal = () => {
-  showModal.value = !showModal.value
-  console.log(showModal)
+const handleOpenModal = () => showModal.value = true
+
+//we check if user selected project if so, then we update otherwise we create
+const handleSave = (data: Product) => {
+  if (selectedProduct.value.name) {
+    const id = data.id
+    delete data.id
+    productsStore.updateProduct(id, data);
+  } else {
+    delete data.id;
+    productsStore.createProduct(data);
+  }
+  handleCloseModal();
+};
+const handleCloseModal = () => {
+  showModal.value = !showModal.value;
+  selectedProduct.value = emptyProductObj;
+};
+const handleClick = function(e) {
+  if(e.target.parentNode.className === "table-row") {
+    selectedProduct.value = productsStore.getProduct(e.target.parentNode.getAttribute("id"))
+    handleOpenModal()
+  }
 };
 
 </script>
@@ -42,35 +57,33 @@ const handleModal = () => {
     <header>
       <h1>Товары</h1>
       <div class="actions">
-        <button @click="handleModal">Добавить товар</button>
+        <button @click="handleOpenModal">Добавить товар</button>
         <button @click="handleLogout">Выход</button>
       </div>
     </header>
 
     <table class="data-table">
-      <thead>
-        <tr>
-          <th>Название</th>
-          <th>Дата создания</th>
-          <th>Цена</th>
-          <th>Бренд</th>
-          <th>Кол-во</th>
-          <th>Дата создания</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="product in productsStore.getAllProducts" :key="product.id">
-          <td>{{ product.name }}</td>
-          <td>{{ product.date_created }}</td>
-          <td>{{ product.price }}</td>
-          <td>{{ product.brand }}</td>
-          <td>{{ product.stock }}</td>
-          <td>{{ product.category }}</td>
-        </tr>
-      </tbody>
+      <div class="table-header">
+        <h3>Название</h3>
+        <h3>Цена</h3>
+        <h3>Категория</h3>
+        <h3>Описание</h3>
+        <h3>Кол-во</h3>
+      </div>
+      <div class="table-body" @click="handleClick">
+        <InfinityScroller :load-more="productsStore.fetchProducts">
+          <div class="table-row" v-for="product in productsStore.getAllProducts" :key="product.id" :id="product.id">
+            <p>{{ product.name }}</p>
+            <p>{{ product.price }}</p>
+            <p>{{ product.category }}</p>
+            <p>{{ product.description }}</p>
+            <p>{{ product.stock }}</p>
+          </div>
+        </InfinityScroller>
+      </div>
     </table>
 
-    <ProductModal v-if="showModal" ref="productModal" :type="selectedProduct ? 'update' : 'create'" :product="selectedProduct"  @close="showModal = !showModal"/>
+    <ProductModal v-if="showModal" ref="productModal" :type="selectedProduct.name ? 'update' : 'create'" :product="selectedProduct" @close="handleCloseModal" @save="handleSave" />
   </div>
 </template>
 
@@ -94,35 +107,31 @@ const handleModal = () => {
     width: 100%;
     border-collapse: collapse;
 
-    th,
-    td {
-      padding: 1rem;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-
-    tr:hover {
-      background-color: #f5f5f5;
-    }
-
-    .active {
-      color: green;
-    }
-
-    .inactive {
-      color: #dc3545;
-    }
-  }
-
-  .filters {
-    display: flex;
-    gap: 2rem;
-    margin-bottom: 2rem;
-
-    .filter-group {
+    .table-header {
       display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+      align-items: center;
+      h3 {
+        width: 20%;
+        text-align: start;
+      }
+    }
+
+    .table-body {
+      .table-row {
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        transition: .2s;
+        cursor: pointer;
+        p {
+          width: 20%;
+          text-align: start;
+        }
+      }
+      .table-row:hover {
+        background-color: rgb(241, 241, 241);
+      }
     }
   }
 }
