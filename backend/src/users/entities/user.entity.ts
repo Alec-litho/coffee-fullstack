@@ -1,17 +1,24 @@
-import { Entity, ObjectIdColumn, ObjectId, Column, PrimaryColumn } from 'typeorm';
+import { ApiProperty } from "@nestjs/swagger";
+import { IsNotEmpty, IsString } from "class-validator";
 
-@Entity()
 export class User {
-  @PrimaryColumn()
-  @ObjectIdColumn()
-  id: ObjectId; 
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ example: '9876545623320', description: 'User`s id' })  
+  id: number;
 
-  @Column({ unique: true })
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ example: 'Oleg', description: 'User name' })  
+  name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ example: 'test@gmail.com', description: 'User`s email' })  
   email: string;
 
-  @Column()
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ example: '123', description: 'User`s password' })  
   password: string;
-
-  @Column()
-  username: string;
 }
