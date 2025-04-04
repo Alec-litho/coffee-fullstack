@@ -4,15 +4,15 @@ import type { Product } from "~/types.d";
 
 const props = defineProps<{
   type: "create" | "update";
-  product?: Product;
+  product: Product;
 }>();
-
+console.log(props.type)
 const emit = defineEmits<{
   (e: "save", product: Product): void;
   (e: "close"): void;
 }>();
 
-const form = ref<Product>({
+const form = ref<Product>(props.type === "update"? props.product : {
   id: 0,
   name: "",
   price: 0,
